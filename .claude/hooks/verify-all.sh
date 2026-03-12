@@ -16,6 +16,12 @@ if [[ -d "$PROJECT_DIR/contracts" ]]; then
     echo "project-template: integration tests FAILED"
     FAILED=1
   fi
+
+  # Advisory: remind about local-node validation
+  if [[ -f "$PROJECT_DIR/integration/src/bin/validate_local.rs" ]]; then
+    echo "=== Note: local-node validation binary exists ==="
+    echo "Ensure 'cargo run --bin validate_local --release' has been run against a local node before proceeding to frontend."
+  fi
 fi
 
 # --- Frontend Template: tests + typecheck + build ---

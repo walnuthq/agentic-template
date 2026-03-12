@@ -38,20 +38,33 @@ Each sub-template has its own CLAUDE.md with detailed instructions, skills for d
 
 ## Development Workflow
 
-**Contracts first, then frontend.** The frontend consumes compiled contract artifacts.
+**Contracts first, validate against local node, then frontend.** Frontend work is gated on local-node validation passing.
 
 1. Build smart contracts in `project-template/`
    - Write account components, note scripts, and tx scripts in `project-template/contracts/`
-   - Test with MockChain in `project-template/integration/tests/`
    - Contracts compile to `.masp` package files
-   - Deploy the contracts to testnet to use the contracts in the frontend using testnet
 
-2. Copy contract artifacts to the frontend
+2. Validate with MockChain tests
+   - Write and run MockChain integration tests in `project-template/integration/tests/`
+   - Validate state transitions, note lifecycle, and expected outputs
+   - Exit criteria: all MockChain tests pass with explicit assertions
+
+3. Local-node validation **(GATE -- must pass before frontend)**
+   - Write Rust client binaries in `project-template/integration/src/bin/` that exercise the full contract flow against a local Miden node
+   - Start local node: `miden-node bundled start --data-directory local-node-data --rpc.url http://0.0.0.0:57291`
+   - Run: `cd project-template && cargo run --bin validate_local --release`
+   - Verify: transaction success/failure paths, state transitions, note lifecycle, clean node logs
+   - See the `local-node-validation` skill for the full checklist and setup guide
+   - Exit criteria: all state assertions pass, node logs are clean
+
+4. Copy artifacts and deploy
+   - Deploy contracts to testnet using integration binaries
    - Copy `.masp` files from `project-template/masm-output/` (or the contract's `target/` directory) into `frontend-template/public/packages/`
    - The frontend loads these at runtime via the Miden SDK
 
-3. Build the frontend in `frontend-template/`
+5. Build the frontend in `frontend-template/`
    - React components use `@miden-sdk/react` hooks to interact with contracts
+   - Mirror the validated Rust binary flow as closely as possible
    - TDD workflow: write tests first, then implement
    - Automated hooks verify type safety and test coverage on every edit
 
@@ -61,6 +74,7 @@ Each sub-template has its own CLAUDE.md with detailed instructions, skills for d
 |------|-----------|
 | Write or edit smart contracts | `project-template/contracts/` |
 | Write or edit integration tests | `project-template/integration/tests/` |
+| Validate contracts against local node | `project-template/integration/src/bin/` |
 | Deploy contracts to testnet | `project-template/integration/src/bin/` |
 | Write or edit frontend components | `frontend-template/src/` |
 | Write or edit frontend tests | `frontend-template/src/__tests__/` |
@@ -83,6 +97,16 @@ cargo miden build --manifest-path project-template/contracts/<name>/Cargo.toml -
 **Run contract integration tests:**
 ```
 cd project-template && cargo test -p integration --release
+```
+
+**Start local Miden node:**
+```
+cd project-template && miden-node bundled start --data-directory local-node-data --rpc.url http://0.0.0.0:57291
+```
+
+**Run local-node validation:**
+```
+cd project-template && cargo run --bin validate_local --release
 ```
 
 **Start frontend dev server:**

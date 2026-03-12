@@ -2,3 +2,6 @@
 *.log
 .vscode/
 .idea/
+local-node-data/
+local-keystore/
+local-store.sqlite3
