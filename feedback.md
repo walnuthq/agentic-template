@@ -15,6 +15,9 @@
 - **Asset layout documentation** (`[amount, 0, faucet_suffix, faucet_prefix]`) and P2ID input ordering (`[suffix, prefix]`) should be in the pitfalls skill. Getting either wrong causes silent failures.
 - **MockChain limitations** (all notes must be added before `.build()`) should be documented in the testing patterns skill.
 - **`Value::read()` type annotation requirement** is a common beginner stumble that should be in the patterns skill.
+- **Node/client version mismatch is a silent failure mode.** `miden-client 0.13` requires `miden-node 0.13.x`, but the node installed via `cargo install miden-node` resolves to 0.12.2 (the latest stable on crates.io). The gRPC accept header validation rejects cross-version requests with a generic "server rejected request - please check your version and network settings" error that doesn't mention version mismatch. The fix is `cargo install miden-node --git https://github.com/0xMiden/miden-node --tag v0.13.8`. This version pairing (client ↔ node) should be documented prominently — ideally in CLAUDE.md and the `local-node-validation` skill — with the exact install command.
+
+- **NoteTag routing bits are critical but undocumented for contract developers.** Contract-generated output notes using `Tag(0)` are invisible to client sync because no routing bits are set. The node filters notes by tag during sync, and `Tag(0)` matches nothing. The fix requires computing a proper account-targeted tag using bit manipulation on the recipient's account prefix — mirroring `NoteTag::with_account_target()` from Rust. This was the second-biggest debugging challenge during local-node validation (worked fine in MockChain tests which bypass sync entirely). The NoteTag bit layout, routing semantics, and the `compute_note_tag()` pattern should be in both `rust-sdk-pitfalls` and `local-node-validation` skills.
 
 ## Suggested Improvements
 
@@ -23,6 +26,8 @@
 2. Asset Word layout: `[amount, 0, faucet_suffix, faucet_prefix]`
 3. P2ID recipient inputs: `[suffix, prefix]` (suffix first)
 4. `Value::read()` always needs explicit `Word` type annotation
+5. Contract-generated output notes MUST use account-targeted tags, not `Tag(0)` — `Tag(0)` has no routing bits and notes are invisible to sync
+6. `Felt::new()` returns `Result<Felt, FeltError>`, not `Felt` — must unwrap
 
 ### New testing patterns to add to `rust-sdk-testing-patterns`:
 1. All notes must be added to `MockChainBuilder` before `.build()`
@@ -40,14 +45,34 @@ pub fn receive_asset(&mut self, a0: Felt, a1: Felt, a2: Felt, a3: Felt) {
 }
 ```
 
+### CLI binary development patterns
+When building `run_auction.rs` for local-node validation:
+
+**Faucet creation:** `create_basic_fungible_faucet()` from `miden_standards` requires `AuthScheme::Falcon512Rpo` (not NoAuth). The function is NOT re-exported from miden-client, so import directly from `miden_standards::account::faucets`.
+
+**Consuming notes from `get_consumable_notes`:** Returns `(InputNoteRecord, Vec<NoteConsumability>)`. `TransactionRequestBuilder::input_notes()` requires `(Note, Option<NoteArgs>)`. Convert via `let note: Note = record.try_into()?`.
+
+**BlockNumber type:** Not a primitive — use `.as_u32()` for arithmetic/comparison.
+
+**Minting:** `TransactionRequestBuilder::build_mint_fungible_asset()` consumes the builder and returns `TransactionRequest` directly (not a builder). No `.build()` call needed after it.
+
+**Note discovery for contract-generated output notes:** Contract-generated P2ID notes MUST use proper account-targeted tags, not `Tag(0)`. Using `Tag(0)` means no routing bits are set and the node never serves these notes during sync. In the contract, compute the tag from the recipient's account prefix: `compute_note_tag(recipient_prefix)` using `(prefix_u64 >> 34) as u32 & 0xFFFF0000`. On the client side, register tags with `client.add_note_tag(NoteTag::with_account_target(account_id))`.
+
 ### "P2ID Output Note" pattern
 Creating P2ID output notes from within account procedures for asset transfers:
 ```rust
+fn compute_note_tag(account_prefix: Felt) -> Tag {
+    let prefix_u64 = account_prefix.as_u64();
+    let high_bits = (prefix_u64 >> 34) as u32;
+    let tag_val = (high_bits & 0xFFFF0000u32) as u64;
+    Tag::from(Felt::new(tag_val).unwrap())
+}
+
 let serial_num = Word::from_u64_unchecked(unique_id, 0, 0, 0);
 let script_root = Digest::from_word(self.p2id_script_root.read());
 let inputs = vec![recipient_suffix, recipient_prefix];
 let recipient = Recipient::compute(serial_num, script_root, inputs);
-let tag = Tag::from(felt!(0));
+let tag = compute_note_tag(recipient_prefix); // MUST use account-targeted tag, NOT Tag(0)
 let note_type = NoteType::from(felt!(2));
 let note_idx = output_note::create(tag, note_type, recipient);
 native_account::remove_asset(asset.clone());
