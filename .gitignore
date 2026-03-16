@@ -5,3 +5,7 @@
 local-node-data/
 local-keystore/
 local-store.sqlite3
+store.sqlite3
+.playwright-mcp/
+tasks/
+feedback.md
