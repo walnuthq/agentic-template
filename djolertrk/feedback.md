@@ -82,3 +82,4 @@ output_note::add_asset(asset, note_idx);
 ## Full project template implementation
 
 https://github.com/walnuthq/project-template/tree/ai-agent-test/simple-auction-app-cli
+https://github.com/walnuthq/agentic-template/tree/ai-agent-test/simple-auction-app-cli
