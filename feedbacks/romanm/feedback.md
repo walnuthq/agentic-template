@@ -100,6 +100,35 @@ The main gaps are in **error message quality** (assertion debugging), **missing 
 
 ---
 
+## Developer Experience — Hands-On Observations
+
+These observations are from hands-on usage of the agentic template during the Miden Day build session.
+
+### What worked well
+- **Auto-running hooks**: Build and test hooks firing on every edit created a tight feedback loop that caught errors immediately without manual intervention.
+
+### What needs improvement
+
+#### 1. Plugin/Skill Discovery Is Too Hidden
+The `frontend-template/CLAUDE.md` recommends installing Vercel's agent skills (`react-best-practices`, `web-design-guidelines`, `composition-patterns`) and Anthropic's `frontend-design` plugin — but this recommendation is buried in the docs. It took several hours to discover these existed. **Suggestion**: Pre-install these skills in the template, or surface the recommendation prominently on first run.
+
+#### 2. Browser Testing Should Be Pre-Configured
+Playwright MCP is referenced in the docs but not installed or configured out of the box. It took hours of debugging before discovering it was the recommended tool for UI verification. **Suggestion**: Ship the template with Playwright installed and configured, and have the agent use it proactively for visual verification.
+
+#### 3. Playwright Cannot Access the Wallet — Chrome Remote Debugging Needed
+Playwright runs a sandboxed browser without extensions, so it cannot interact with the MidenFi wallet. Real end-to-end testing requires connecting to the user's actual Chrome (with the wallet extension installed) via remote debugging. This gap is not documented. **Suggestion**: Provide an out-of-the-box option for Chrome remote debugging alongside Playwright, and document clearly when each tool applies.
+
+#### 4. Chrome Setup Was Painful (Arc Incompatible, Profile Issues)
+Arc browser doesn't support the remote debugging workflow. After switching to Chrome, the agent repeatedly tried to launch its own browser instance instead of connecting to the user's real Chrome with a real user profile. Multiple iterations over a couple of hours were needed to get this working. **Suggestion**: Document browser requirements upfront (Chrome required, Arc unsupported). Add a setup script or skill that configures Chrome remote debugging with the correct user profile on first use.
+
+#### 5. Wallet Connection Didn't Work Out of the Box
+Once Chrome was running, wallet detection still failed. The agent needed several iterations to get wallet connection working. **Suggestion**: Include a tested wallet-connection flow in the template (e.g., a working example component) so that the happy path works immediately.
+
+#### 6. Counter Contract Leftovers in the Template
+The frontend template ships with counter-contract UI (components, hooks, tests). When building a different application (sealed-bid auction), this was surprising bloat that needed to be cleaned up. **Suggestion**: Either ship the template as a clean skeleton with no contract-specific UI, or make the counter example clearly optional/removable.
+
+---
+
 ## Full Project Implementation
 
 A sealed-bid auction system built on Miden during Miden Day March 2026: three smart contracts (auction account, bid note, finalize note), MockChain integration tests covering 7 scenarios, local-node deployment binaries, and a React frontend replacing the starter counter template.
