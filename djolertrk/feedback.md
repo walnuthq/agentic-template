@@ -78,3 +78,7 @@ let note_idx = output_note::create(tag, note_type, recipient);
 native_account::remove_asset(asset.clone());
 output_note::add_asset(asset, note_idx);
 ```
+
+## Full project template implementation
+
+https://github.com/walnuthq/project-template/tree/ai-agent-test/simple-auction-app-cli
