@@ -2,6 +2,12 @@
 # Stop hook: runs full verification for both templates on task completion.
 # Checks which templates are set up (dependencies installed) and verifies each.
 
+# Prevent infinite re-triggering: if the hook already ran, let Claude stop.
+INPUT=$(cat)
+if [ "$(echo "$INPUT" | jq -r '.stop_hook_active // false')" = "true" ]; then
+  exit 0
+fi
+
 FAILED=0
 
 # --- Project Template: contract integration tests ---
