@@ -34,12 +34,12 @@
 ### Local Setup & CLI Setup Not Documented
 
 - **Issue**: There is no documentation for setting up the local development environment (installing the Miden CLI, configuring `miden-client.toml`, creating accounts via CLI, etc.). The CLAUDE.md assumes you already have everything installed but never walks through it. Additionally, the local node setup only works for contract/CLI validation — frontend development requires testnet because MidenFi wallet cannot connect to a local node.
-- **Suggestion**: Add a "Local Environment Setup" section to CLAUDE.md covering: installing `miden-node`, `miden-client` CLI, initial account creation, and `miden-client.toml` configuration for both local and testnet. Clearly state that CLI workflows work against both local node and testnet, but frontend workflows are testnet-only.
+- **Suggestion**: Add a "Local Environment Setup" section to CLAUDE.md covering: installing `miden-node`, `miden-client` CLI, initial account creation, `miden-client.toml` configuration for both local and testnet, genesis node setup, and data storage directory configuration. Local node setup should be possible in a single command with sensible defaults. Clearly state that CLI workflows work against both local node and testnet, but frontend workflows are testnet-only.
 
 ### Debug Trace Logs Are Useless When `in_debug_mode` Is True
 
 - **Issue**: When `in_debug_mode` is set to `true`, the trace log output is effectively useless — it produces massive, unstructured output that doesn't help diagnose issues. The signal-to-noise ratio is too low to identify actual problems.
-- **Suggestion**: Either improve the debug trace formatting to highlight relevant events (failed assertions, state transitions, errors), or provide a filtered/summary mode. At minimum, document that `in_debug_mode` traces are not useful for debugging and suggest alternative approaches (e.g., targeted logging in test code).
+- **Suggestion**: Improve the debug trace formatting to highlight relevant events (failed assertions, state transitions, errors), or provide a filtered/summary mode. Trace logs should be structured and actionable — currently they are text that make debugging harder, not easier. At minimum, document that `in_debug_mode` traces are not useful for debugging and suggest alternative approaches (e.g., targeted logging in test code).
 
 ### Version Mismatch Between Rust and JS SDKs
 
@@ -61,7 +61,6 @@
 ### Skills
 
 - **`deploy-account` skill**: Step-by-step guide for deploying accounts to testnet, including the transaction submission step that's currently missing.
-- **`two-player-testing` skill**: Guide for setting up two Chrome profiles with MidenFi wallet for testing multiplayer games.
 - **`network-debugging` skill**: Checklist for diagnosing "account not found", version mismatches, and CORS issues.
 
 ### Hooks
@@ -89,3 +88,13 @@
 1. **Commitment-reveal pattern**: The RPS game's commit/reveal flow (hash commitment with nonce, store in localStorage, reveal later) is reusable for any game or auction.
 2. **Network account polling**: The `useRpsGame` pattern of importing a network account, polling with `sync()` + `refetch()`, and reading `StorageMap` entries is a general pattern for reading any on-chain account state.
 3. **Custom wallet button**: The `WalletButton.tsx` pattern using `useMidenFiWallet()` should replace `WalletMultiButton` in the template.
+
+## Full Project Implementation
+
+A Rock Paper Scissors game built on Miden during Miden Day March 2026: smart contracts with commit/reveal pattern, MockChain integration tests, testnet deployment, and a React frontend with Miden wallet integration.
+
+| Repository                                                                                      | Branch                    |
+| ----------------------------------------------------------------------------------------------- | ------------------------- |
+| [project-template](https://github.com/walnuthq/project-template/tree/marijam/simple-rcs-game)   | `marijam/simple-rcs-game` |
+| [frontend-template](https://github.com/walnuthq/frontend-template/tree/marijam/simple-rcs-game) | `marijam/simple-rcs-game` |
+| [agentic-template](https://github.com/walnuthq/agentic-template/tree/marijam/simple-rcs-game)   | `marijam/simple-rcs-game` |
